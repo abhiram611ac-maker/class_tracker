@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Learning Tracker</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI,sans-serif;
+}
+
+body{
+    background:#f4f7fb;
+    padding:20px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:#2563eb;
+}
+
+.dashboard{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.card h2{
+    color:#2563eb;
+}
+
+.form-box{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+
+input, textarea, select{
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    margin-bottom:15px;
+    border:1px solid #ddd;
+    border-radius:8px;
+}
+
+button{
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+    background:#2563eb;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+.export{
+    background:green;
+}
+
+.delete-btn{
+    background:red;
+}
+
+.edit-btn{
+    background:orange;
+}
+
+.search-box{
+    margin-bottom:15px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+}
+
+th,td{
+    padding:10px;
+    border:1px solid #ddd;
+    text-align:left;
+}
+
+@media(max-width:768px){
+    table{
+        display:block;
+        overflow-x:auto;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>📚 Class Learning Tracker</h1>
+
+<div class="dashboard">
+    <div class="card">
+        <h2 id="totalClasses">0</h2>
+        <p>Total Classes</p>
+    </div>
+
+    <div class="card">
+        <h2 id="attendedClasses">0</h2>
+        <p>Attended</p>
+    </div>
+
+    <div class="card">
+        <h2 id="listenedClasses">0</h2>
+        <p>Listened</p>
+    </div>
+
+    <div class="card">
+        <h2 id="understoodClasses">0</h2>
+        <p>Understood</p>
+    </div>
+</div>
+
+<div class="form-box">
+
+<h2>Add Class</h2>
+
+<input type="hidden" id="editIndex">
+
+<label>Date</label>
+<input type="date" id="date">
+
+<label>Subject</label>
+<input type="text" id="subject" placeholder="e.g Python">
+
+<label>Topic Covered</label>
+<input type="text" id="topic">
+
+<label>Teacher</label>
+<input type="text" id="teacher">
+
+<label>Notes</label>
+<textarea id="notes" rows="4"></textarea>
+
+<label>Attended?</label>
+<select id="attended">
+    <option>Yes</option>
+    <option>No</option>
+</select>
+
+<label>Listened Properly?</label>
+<select id="listened">
+    <option>Yes</option>
+    <option>No</option>
+</select>
+
+<label>Understood Topic?</label>
+<select id="understood">
+    <option>Yes</option>
+    <option>No</option>
+</select>
+
+<button onclick="saveEntry()">Save Entry</button>
+
+</div>
+
+<input
+class="search-box"
+id="search"
+type="text"
+placeholder="Search Subject / Topic / Teacher..."
+onkeyup="renderTable()">
+
+<button class="export" onclick="downloadCSV()">
+Download Excel (CSV)
+</button>
+
+<br><br>
+
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Subject</th>
+<th>Topic</th>
+<th>Teacher</th>
+<th>Attended</th>
+<th>Listened</th>
+<th>Understood</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
+
+</div>
+
+<script>
+
+let entries =
+JSON.parse(localStorage.getItem("classTracker")) || [];
+
+function saveStorage(){
+    localStorage.setItem(
+        "classTracker",
+        JSON.stringify(entries)
+    );
+}
+
+function updateDashboard(){
+
+    document.getElementById("totalClasses").textContent =
+    entries.length;
+
+    document.getElementById("attendedClasses").textContent =
+    entries.filter(c=>c.attended==="Yes").length;
+
+    document.getElementById("listenedClasses").textContent =
+    entries.filter(c=>c.listened==="Yes").length;
+
+    document.getElementById("understoodClasses").textContent =
+    entries.filter(c=>c.understood==="Yes").length;
+}
+
+function saveEntry(){
+
+    const data = {
+
+        date:document.getElementById("date").value,
+        subject:document.getElementById("subject").value,
+        topic:document.getElementById("topic").value,
+        teacher:document.getElementById("teacher").value,
+        notes:document.getElementById("notes").value,
+        attended:document.getElementById("attended").value,
+        listened:document.getElementById("listened").value,
+        understood:document.getElementById("understood").value
+    };
+
+    if(!data.date || !data.subject){
+        alert("Please enter Date and Subject");
+        return;
+    }
+
+    let index =
+    document.getElementById("editIndex").value;
+
+    if(index===""){
+        entries.push(data);
+    }else{
+        entries[index] = data;
+    }
+
+    saveStorage();
+
+    clearForm();
+
+    renderTable();
+}
+
+function clearForm(){
+
+    document.getElementById("editIndex").value="";
+
+    document.getElementById("date").value="";
+    document.getElementById("subject").value="";
+    document.getElementById("topic").value="";
+    document.getElementById("teacher").value="";
+    document.getElementById("notes").value="";
+}
+
+function renderTable(){
+
+const tbody =
+document.getElementById("tableBody");
+
+const search =
+document.getElementById("search")
+.value.toLowerCase();
+
+tbody.innerHTML="";
+
+entries.forEach((item,index)=>{
+
+let txt =
+JSON.stringify(item).toLowerCase();
+
+if(!txt.includes(search)) return;
+
+tbody.innerHTML += `
+<tr>
+<td>${item.date}</td>
+<td>${item.subject}</td>
+<td>${item.topic}</td>
+<td>${item.teacher}</td>
+<td>${item.attended}</td>
+<td>${item.listened}</td>
+<td>${item.understood}</td>
+<td>
+<button class="edit-btn"
+onclick="editEntry(${index})">
+Edit
+</button>
+
+<button class="delete-btn"
+onclick="deleteEntry(${index})">
+Delete
+</button>
+</td>
+</tr>`;
+});
+
+updateDashboard();
+}
+
+function editEntry(index){
+
+const item = entries[index];
+
+document.getElementById("editIndex").value=index;
+document.getElementById("date").value=item.date;
+document.getElementById("subject").value=item.subject;
+document.getElementById("topic").value=item.topic;
+document.getElementById("teacher").value=item.teacher;
+document.getElementById("notes").value=item.notes;
+document.getElementById("attended").value=item.attended;
+document.getElementById("listened").value=item.listened;
+document.getElementById("understood").value=item.understood;
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+}
+
+function deleteEntry(index){
+
+if(confirm("Delete this entry?")){
+
+entries.splice(index,1);
+
+saveStorage();
+
+renderTable();
+
+}
+}
+
+function downloadCSV(){
+
+let csv =
+"Date,Subject,Topic,Teacher,Notes,Attended,Listened,Understood\n";
+
+entries.forEach(item=>{
+
+csv +=
+`"${item.date}","${item.subject}",
+"${item.topic}","${item.teacher}",
+"${item.notes}","${item.attended}",
+"${item.listened}",
+"${item.understood}"\n`;
+
+});
+
+let blob =
+new Blob([csv],{type:"text/csv"});
+
+let link =
+document.createElement("a");
+
+link.href =
+URL.createObjectURL(blob);
+
+link.download =
+"ClassTracker.csv";
+
+link.click();
+}
+
+renderTable();
+
+</script>
+
+</body>
+</html>
